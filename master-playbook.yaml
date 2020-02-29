@@ -1,0 +1,115 @@
+---
+- hosts: all
+  tasks:
+          - name: Install Pkgs for apt over HTTPS
+            apt :
+                    name: "{{ packages }}"
+                    state: present
+                    update_cache: yes
+            vars :
+                    packages:
+                            - apt-transport-https
+                            - ca-certificates
+                            - curl
+                            - gnupg-agent
+                            - software-properties-common
+
+          - name: Add apt signing key for docker
+            apt_key :
+                    url : https://download.docker.com/linux/ubuntu/gpg
+                    state : present 
+
+          - name: Add apt repository for stable version
+            apt_repository :
+                    repo : deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+                    state : present 
+
+          - name: Install docker and its dependancies
+            apt :
+                    name: "{{ packages }}"
+                    state: present
+                    update_cache: yes
+            vars :
+                    packages:
+                            - docker-ce
+                            - docker-ce-cli
+                            - containerd.io
+                    notify:
+                            - Docker status
+
+          - name: Add cloud_user to docker group
+            user :
+                    name: cloud_user
+                    groups : docker
+                    append : yes
+            tags :
+                    - add_user_to_docker
+
+          - name: Remove swapfile from /etc/fstab
+            mount :
+                    name : "{{ item }}"
+                    fstype: swap
+                    state : absent
+            with_items:
+                    - swap
+                    - none
+
+          - name: Disable swap
+            command : swapoff -a
+            when : ansible_swaptotal_mb > 0
+
+          - name: Add apt signing key for Kubernetes
+            apt_key :
+                    url : https://packages.cloud.google.com/apt/doc/apt-key.gpg
+                    state : present
+
+          - name: Add apt repositoriesfor Kubernetes
+            apt_repository:
+                    repo : deb https://apt.kubernetes.io/ kubernetes-xenial main
+                    state : present
+                    filename: kubernetes.list
+
+          - name: Install k8s binaries
+            apt :
+                    name: "{{ packages }}"
+                    state : present
+                    update_cache : yes
+            vars:
+                    packages:
+                             - kubelet
+                             - kubeadm
+                             - kubectl
+
+          - name: Initialize k8s cluster using kubeadm
+            command : kubeadm init --apiserver-advertise-address="172.31.10.227" --apiserver-cert-extra-sans="172.31.10.227" --node-name='vijaygharge1c.mylabserver.com' --pod-network-cidr=10.1.0.0/16
+
+          - name: Setup kubeconfig for cloud_user to access k8s cluster 
+            command : "{{ item }}"
+            with_items:
+                    - mkdir -p /home/cloud_user/.kube
+                    - cp -i /etc/kubernetes/admin.conf /home/cloud_user/.kube/config
+                    - chown cloud_user:cloud_user /home/cloud_user/.kube/config
+
+          - name: Setup container networking provider Calico and network policy engine 
+            become : false
+            command : kubectl apply -f https://docs.projectcalico.org/v3.9/manifests/calico.yaml
+            tags :
+                    - calico
+
+          - name: Generate kube join command for joining k8s nodes and store command in file join-command
+            command : kubeadm token create --print-join-command
+            register : join_command
+            tags :
+                    - join_command
+
+          - name: Copy join command to local file
+            local_action : copy content="{{ join_command.stdout_lines[0] }}" dest="/home/cloud_user/k8s/join-command"
+            tags :
+                    - copy_join_command_to_file
+
+  handlers:
+  - name : Docker status
+    service: 
+            name : docker
+            state : started
+
