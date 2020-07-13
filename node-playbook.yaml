@@ -88,7 +88,7 @@
 
           - name: Copy join command to server location
             copy: 
-                src : join-command 
+                src : /home/cloud_user/join-command 
                 dest : /tmp/join_command.sh 
                 mode : 0777
                 owner : cloud_user
