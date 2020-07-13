@@ -69,6 +69,13 @@
                     state : present
                     filename: kubernetes.list
 
+          - name: Set net.ipv4.conf.all.rp_filter to 1
+            sysctl :
+                   name: net.ipv4.conf.all.rp_filter
+                   value: '1'
+                   state: present
+                   reload: yes
+
           - name: Install k8s binaries
             apt :
                     name: "{{ packages }}"

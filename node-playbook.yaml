@@ -54,6 +54,13 @@
                     - swap
                     - none
 
+          - name: Set net.ipv4.conf.all.rp_filter to 1
+            sysctl :
+                   name: net.ipv4.conf.all.rp_filter
+                   value: '1'
+                   state: present
+                   reload: yes
+
           - name: Disable swap
             command : swapoff -a
             when : ansible_swaptotal_mb > 0
