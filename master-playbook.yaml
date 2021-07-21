@@ -37,9 +37,9 @@
                     notify:
                             - Docker status
 
-          - name: Add cloud_user to docker group
+          - name: Add vgharge to docker group
             user :
-                    name: cloud_user
+                    name: vgharge
                     groups : docker
                     append : yes
             tags :
@@ -95,9 +95,9 @@
             tags :
                     - setup_kubeconfig
             with_items:
-                    - mkdir -p /home/cloud_user/.kube
-                    - cp -i /etc/kubernetes/admin.conf /home/cloud_user/.kube/config
-                    - chown cloud_user:cloud_user /home/cloud_user/.kube/config
+                    - mkdir -p /home/vgharge/.kube
+                    - cp -i /etc/kubernetes/admin.conf /home/vgharge/.kube/config
+                    - chown vgharge:vgharge /home/vgharge/.kube/config
 
           - name: Setup container networking provider Calico and network policy engine 
             become : false
@@ -112,7 +112,7 @@
                     - join_command
 
           - name: Copy join command to local file
-            local_action : copy content="{{ join_command.stdout_lines[0] }}" dest="/home/cloud_user/join-command"
+            local_action : copy content="{{ join_command.stdout_lines[0] }}" dest="/home/vgharge/join-command"
             tags :
                     - copy_join_command_to_file
 
