@@ -88,7 +88,7 @@
                              - kubectl
 
           - name: Initialize k8s cluster using kubeadm
-            command : kubeadm init --apiserver-advertise-address="172.31.44.250" --apiserver-cert-extra-sans="172.31.44.250" --node-name='vijaygharge1c.mylabserver.com' --pod-network-cidr=10.1.0.0/16
+            command : kubeadm init --apiserver-advertise-address="172.31.44.250" --pod-network-cidr=10.1.0.0/16
 
           - name: Setup kubeconfig for cloud_user to access k8s cluster 
             command : "{{ item }}"
@@ -101,7 +101,7 @@
 
           - name: Setup container networking provider Calico and network policy engine 
             become : false
-            command : kubectl apply -f https://docs.projectcalico.org/v3.9/manifests/calico.yaml
+            command : kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
             tags :
                     - calico
 
